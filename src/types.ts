@@ -39,6 +39,7 @@ export interface ActualPerformance {
   isCompleted: boolean;
   actualMileage: number;
   actualElevation: number;
+  actualDuration: number; // in minutes
 }
 
 export interface TrainingPhase {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { TrainingPlanResponse, ActualPerformance } from '../types';
-import { Download, Info, Table as TableIcon, TrendingUp, CheckCircle2, Circle, BarChart3, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import { Download, Info, Table as TableIcon, TrendingUp, CheckCircle2, Circle, BarChart3, ChevronLeft, ChevronRight, Layers, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
   BarChart,
@@ -21,6 +21,7 @@ interface TrainingPlanDisplayProps {
 export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, onUpdateActual }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [nonRunChartView, setNonRunChartView] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const itemsPerPage = 10;
 
   const getWeekNumber = (dateStr: string) => {
@@ -133,8 +134,84 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
     return [];
   }, [data, chartView]);
 
+  // Prepare aggregated data for Non-Run Chart (Duration based)
+  const nonRunChartData = useMemo(() => {
+    const isNonRunSession = (type: string) => {
+      return ['Strength', 'Mobility', 'Rest'].includes(type);
+    };
+
+    const getPlannedMinutes = (durationStr: string) => {
+      let plannedMinutes = 0;
+      const lowerStr = durationStr.toLowerCase();
+      if (lowerStr.includes('min')) {
+        plannedMinutes = parseFloat(lowerStr.replace(/[^\d.]/g, '')) || 0;
+      } else if (lowerStr.includes('hour') || lowerStr.includes('jam')) {
+        plannedMinutes = (parseFloat(lowerStr.replace(/[^\d.]/g, '')) || 0) * 60;
+      }
+      return plannedMinutes;
+    };
+
+    if (nonRunChartView === 'daily') {
+      return data.plan.map(session => {
+        const actual = data.actuals?.[session.date];
+        const plannedDuration = isNonRunSession(session.type) 
+          ? getPlannedMinutes(session.durationMileage)
+          : 0;
+        return {
+          label: session.date.split('-').slice(1).join('/'),
+          plannedDuration,
+          actualDuration: actual?.actualDuration || 0,
+        };
+      });
+    }
+
+    if (nonRunChartView === 'weekly') {
+      const weeks: Record<number, { planned: number, actual: number }> = {};
+      data.plan.forEach((session) => {
+        if (!isNonRunSession(session.type)) return;
+        
+        const weekNum = getWeekNumber(session.date);
+        const actual = data.actuals?.[session.date];
+        const plannedMinutes = getPlannedMinutes(session.durationMileage);
+
+        if (!weeks[weekNum]) weeks[weekNum] = { planned: 0, actual: 0 };
+        weeks[weekNum].planned += plannedMinutes;
+        weeks[weekNum].actual += actual?.actualDuration || 0;
+      });
+
+      return Object.entries(weeks).map(([week, vals]) => ({
+        label: `W${week}`,
+        plannedDuration: Number(vals.planned.toFixed(0)),
+        actualDuration: Number(vals.actual.toFixed(0)),
+      }));
+    }
+
+    if (nonRunChartView === 'monthly') {
+      const months: Record<string, { planned: number, actual: number }> = {};
+      data.plan.forEach((session) => {
+        if (!isNonRunSession(session.type)) return;
+
+        const dateObj = new Date(session.date);
+        const monthLabel = dateObj.toLocaleString('default', { month: 'short', year: '2-digit' });
+        const actual = data.actuals?.[session.date];
+        const plannedMinutes = getPlannedMinutes(session.durationMileage);
+
+        if (!months[monthLabel]) months[monthLabel] = { planned: 0, actual: 0 };
+        months[monthLabel].planned += plannedMinutes;
+        months[monthLabel].actual += actual?.actualDuration || 0;
+      });
+
+      return Object.entries(months).map(([month, vals]) => ({
+        label: month,
+        plannedDuration: Number(vals.planned.toFixed(0)),
+        actualDuration: Number(vals.actual.toFixed(0)),
+      }));
+    }
+    return [];
+  }, [data, nonRunChartView]);
+
   const handleActualChange = (date: string, field: keyof ActualPerformance, value: any) => {
-    const current = data.actuals?.[date] || { isCompleted: false, actualMileage: 0, actualElevation: 0 };
+    const current = data.actuals?.[date] || { isCompleted: false, actualMileage: 0, actualElevation: 0, actualDuration: 0 };
     onUpdateActual(date, {
       ...current,
       [field]: value
@@ -209,7 +286,7 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
         </div>
       </motion.section>
 
-      {/* Chart Section */}
+      {/* Chart Section - Running */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -251,6 +328,53 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
               <Legend />
               <Bar dataKey="plannedMileage" name="Planned (km)" fill="#10b981" radius={[4, 4, 0, 0]} />
               <Bar dataKey="actualMileage" name="Actual (km)" fill="#0f172a" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.section>
+
+      {/* Chart Section - Non-Run (Strength/Mobility) */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6"
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Clock className="w-6 h-6 text-blue-600" />
+            <h2 className="text-2xl font-bold text-slate-900">Plan vs Actual Mobility/Strength Exercise (menit)</h2>
+          </div>
+          <div className="flex bg-slate-100 p-1 rounded-xl">
+            {(['daily', 'weekly', 'monthly'] as const).map((view) => (
+              <button
+                key={view}
+                onClick={() => setNonRunChartView(view)}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                  nonRunChartView === view 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {view.charAt(0).toUpperCase() + view.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={nonRunChartData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis 
+                dataKey="label" 
+                tick={{ fontSize: 10 }}
+              />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip 
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              />
+              <Legend />
+              <Bar dataKey="plannedDuration" name="Planned (min)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="actualDuration" name="Actual (min)" fill="#1e293b" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -329,26 +453,41 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
                           {actual.isCompleted ? 'TEREALISASI' : 'BELUM SELESAI'}
                         </button>
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold text-slate-400">Actual Km</label>
-                            <input 
-                              type="number"
-                              value={actual.actualMileage === 0 && actual.actualMileage !== undefined ? '' : actual.actualMileage}
-                              onChange={(e) => handleActualChange(session.date, 'actualMileage', e.target.value === '' ? 0 : parseFloat(e.target.value))}
-                              placeholder="0"
-                              className="w-full px-2 py-1 text-xs border border-slate-200 rounded bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold text-slate-400">Actual EG (m)</label>
-                            <input 
-                              type="number"
-                              value={actual.actualElevation === 0 && actual.actualElevation !== undefined ? '' : actual.actualElevation}
-                              onChange={(e) => handleActualChange(session.date, 'actualElevation', e.target.value === '' ? 0 : parseFloat(e.target.value))}
-                              placeholder="0"
-                              className="w-full px-2 py-1 text-xs border border-slate-200 rounded bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
-                            />
-                          </div>
+                          {['Easy Run', 'Intervals', 'Hill Reps', 'Long Run'].includes(session.type) ? (
+                            <>
+                              <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-bold text-slate-400">Actual Km</label>
+                                <input 
+                                  type="number"
+                                  value={actual.actualMileage === 0 && actual.actualMileage !== undefined ? '' : actual.actualMileage}
+                                  onChange={(e) => handleActualChange(session.date, 'actualMileage', e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                                  placeholder="0"
+                                  className="w-full px-2 py-1 text-xs border border-slate-200 rounded bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-bold text-slate-400">Actual EG (m)</label>
+                                <input 
+                                  type="number"
+                                  value={actual.actualElevation === 0 && actual.actualElevation !== undefined ? '' : actual.actualElevation}
+                                  onChange={(e) => handleActualChange(session.date, 'actualElevation', e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                                  placeholder="0"
+                                  className="w-full px-2 py-1 text-xs border border-slate-200 rounded bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <div className="space-y-1 col-span-2">
+                              <label className="text-[10px] uppercase font-bold text-slate-400">Actual Time (menit)</label>
+                              <input 
+                                type="number"
+                                value={actual.actualDuration === 0 && actual.actualDuration !== undefined ? '' : actual.actualDuration}
+                                onChange={(e) => handleActualChange(session.date, 'actualDuration', e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                                placeholder="0"
+                                className="w-full px-2 py-1 text-xs border border-slate-200 rounded bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
