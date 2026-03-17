@@ -32,8 +32,13 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
     # Scientific Framework:
     1. Periodisasi (Macro & Mesocycles): Bagi rencana ke dalam fase: Base (Aerobic), Build (${data.trainingType === 'trail' ? 'Strength/Vertical' : 'Speed/Threshold'}), Peak (Specific), Tapering, dan Race.
     2. Deload Week: Setiap minggu ke-4 (atau ke-3 jika user berusia >50 thn) harus merupakan minggu pemulihan dengan reduksi volume 30-50%.
-    3. ${data.trainingType === 'trail' ? 'Strength Training: Fokus pada latihan eksentrik untuk menahan beban saat turunan (downhill) dan latihan core/stabilitas.' : 'Speed Work: Fokus pada interval VO2 Max, Tempo Run, dan Threshold untuk meningkatkan pace jalan raya.'}
-    4. Mobility/Yoga: Jadwalkan rutin pasca-lari untuk meningkatkan jangkauan gerak (ROM) dan aktivasi sistem saraf parasimpatis.
+    3. Session Types (HANYA GUNAKAN TIPE INI):
+       - 'run': Untuk semua jenis lari (Easy, Intervals, Hills, Long Run).
+       - 'strength': Untuk latihan kekuatan otot.
+       - 'mobility': Untuk latihan fleksibilitas dan mobilitas.
+       - 'rest': Untuk hari istirahat total.
+    4. ATURAN KETAT: Hanya diperbolehkan SATU tipe sesi per hari. JANGAN menggabungkan 'run' dan 'strength' di hari yang sama. Pilih prioritas utama untuk hari tersebut.
+    5. Mobility/Yoga: Bisa dimasukkan sebagai sesi 'mobility' mandiri di hari pemulihan atau hari khusus.
 
     # Output Requirements:
     - Strategy Summary: Penjelasan mengapa pola ini dipilih berdasarkan profil user, tipe latihan (${data.trainingType}), dan data fitness tambahan (jika ada).
@@ -88,7 +93,10 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
               properties: {
                 date: { type: Type.STRING },
                 day: { type: Type.STRING },
-                type: { type: Type.STRING },
+                type: { 
+                  type: Type.STRING, 
+                  description: "Tipe sesi: 'run', 'mobility', 'strength', atau 'rest'. Hanya satu tipe per hari." 
+                },
                 durationMileage: { type: Type.STRING },
                 elevationGain: { type: Type.STRING },
                 description: { type: Type.STRING },

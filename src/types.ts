@@ -21,7 +21,7 @@ export interface AssessmentData {
 export interface TrainingSession {
   date: string;
   day: string;
-  type: 'Easy Run' | 'Intervals' | 'Hill Reps' | 'Long Run' | 'Strength' | 'Mobility' | 'Rest';
+  type: 'run' | 'mobility' | 'strength' | 'rest';
   durationMileage: string;
   elevationGain: string;
   description: string;
