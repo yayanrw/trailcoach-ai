@@ -287,6 +287,38 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ onSubmit, isLoad
             </select>
           </div>
         </div>
+
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-slate-600">Hari Libur (Rest Days)</label>
+          <div className="flex flex-wrap gap-2">
+            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+              const isSelected = formData.offDays.includes(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      offDays: isSelected 
+                        ? prev.offDays.filter(d => d !== day)
+                        : [...prev.offDays, day]
+                    }));
+                  }}
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                    isSelected 
+                      ? 'bg-slate-900 border-slate-900 text-white' 
+                      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-slate-400 italic">Pilih hari-hari di mana Anda ingin benar-benar istirahat atau tidak lari.</p>
+        </div>
+
         <div className="space-y-1">
           <label className="text-sm font-medium text-slate-600">Riwayat Cedera (6 Bulan Terakhir)</label>
           <textarea

@@ -41,8 +41,16 @@ export interface ActualPerformance {
   actualElevation: number;
 }
 
+export interface TrainingPhase {
+  name: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+}
+
 export interface TrainingPlanResponse {
   strategySummary: string;
+  periodization: TrainingPhase[];
   plan: TrainingSession[];
   weeklySummaries: WeeklySummary[];
   actuals?: Record<string, ActualPerformance>; // Key is date

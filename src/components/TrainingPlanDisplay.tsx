@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { TrainingPlanResponse, ActualPerformance } from '../types';
-import { Download, Info, Table as TableIcon, TrendingUp, CheckCircle2, Circle, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Info, Table as TableIcon, TrendingUp, CheckCircle2, Circle, BarChart3, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
   BarChart,
@@ -23,11 +23,25 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const itemsPerPage = 10;
 
+  const getWeekNumber = (dateStr: string) => {
+    const firstDate = new Date(data.plan[0].date);
+    const currentDate = new Date(dateStr);
+    
+    // Get day of week (1 for Monday, ..., 7 for Sunday)
+    const getDayOfWeek = (d: Date) => d.getDay() === 0 ? 7 : d.getDay();
+    
+    const d1 = getDayOfWeek(firstDate);
+    const diffDays = Math.floor((currentDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return Math.floor((diffDays + d1 - 1) / 7) + 1;
+  };
+
   const exportToCSV = () => {
-    const headers = ['Tanggal', 'Hari', 'Jenis Latihan', 'Durasi/Jarak', 'Elevasi', 'Deskripsi', 'Fokus Utama', 'Realisasi', 'Actual Mileage', 'Actual Elevation'];
+    const headers = ['Week', 'Tanggal', 'Hari', 'Jenis Latihan', 'Durasi/Jarak', 'Elevasi', 'Deskripsi', 'Fokus Utama', 'Realisasi', 'Actual Mileage', 'Actual Elevation'];
     const rows = data.plan.map(session => {
       const actual = data.actuals?.[session.date];
       return [
+        getWeekNumber(session.date),
         session.date,
         session.day,
         session.type,
@@ -59,10 +73,17 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
 
   // Prepare aggregated data for Chart
   const aggregatedChartData = useMemo(() => {
+    const isRunSession = (type: string) => {
+      const runTypes = ['Easy Run', 'Intervals', 'Hill Reps', 'Long Run'];
+      return runTypes.includes(type);
+    };
+
     if (chartView === 'daily') {
       return data.plan.map(session => {
         const actual = data.actuals?.[session.date];
-        const plannedMileage = parseFloat(session.durationMileage.replace(/[^\d.]/g, '')) || 0;
+        const plannedMileage = isRunSession(session.type) 
+          ? (parseFloat(session.durationMileage.replace(/[^\d.]/g, '')) || 0)
+          : 0;
         return {
           label: session.date.split('-').slice(1).join('/'),
           plannedMileage,
@@ -73,10 +94,12 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
 
     if (chartView === 'weekly') {
       const weeks: Record<number, { planned: number, actual: number }> = {};
-      data.plan.forEach((session, index) => {
-        const weekNum = Math.floor(index / 7) + 1;
+      data.plan.forEach((session) => {
+        const weekNum = getWeekNumber(session.date);
         const actual = data.actuals?.[session.date];
-        const plannedMileage = parseFloat(session.durationMileage.replace(/[^\d.]/g, '')) || 0;
+        const plannedMileage = isRunSession(session.type)
+          ? (parseFloat(session.durationMileage.replace(/[^\d.]/g, '')) || 0)
+          : 0;
         if (!weeks[weekNum]) weeks[weekNum] = { planned: 0, actual: 0 };
         weeks[weekNum].planned += plannedMileage;
         weeks[weekNum].actual += actual?.actualMileage || 0;
@@ -94,7 +117,9 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
         const dateObj = new Date(session.date);
         const monthLabel = dateObj.toLocaleString('default', { month: 'short', year: '2-digit' });
         const actual = data.actuals?.[session.date];
-        const plannedMileage = parseFloat(session.durationMileage.replace(/[^\d.]/g, '')) || 0;
+        const plannedMileage = isRunSession(session.type)
+          ? (parseFloat(session.durationMileage.replace(/[^\d.]/g, '')) || 0)
+          : 0;
         if (!months[monthLabel]) months[monthLabel] = { planned: 0, actual: 0 };
         months[monthLabel].planned += plannedMileage;
         months[monthLabel].actual += actual?.actualMileage || 0;
@@ -135,6 +160,53 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
         <p className="text-emerald-800 leading-relaxed text-lg">
           {data.strategySummary}
         </p>
+      </motion.section>
+
+      {/* Periodization Preview */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6"
+      >
+        <div className="flex items-center gap-3">
+          <Layers className="w-6 h-6 text-emerald-600" />
+          <h2 className="text-2xl font-bold text-slate-900">Fase Periodisasi</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {data.periodization.map((phase, idx) => {
+            const today = new Date();
+            const start = new Date(phase.startDate);
+            const end = new Date(phase.endDate);
+            const isActive = today >= start && today <= end;
+
+            return (
+              <div 
+                key={idx} 
+                className={`relative p-4 rounded-2xl border transition-all ${
+                  isActive 
+                    ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20' 
+                    : 'border-slate-100 bg-slate-50'
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+                    Fase Saat Ini
+                  </div>
+                )}
+                <h3 className={`font-bold text-sm mb-1 ${isActive ? 'text-emerald-900' : 'text-slate-700'}`}>
+                  {phase.name}
+                </h3>
+                <div className="text-[10px] text-slate-400 font-mono mb-2">
+                  {new Date(phase.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - {new Date(phase.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                </div>
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  {phase.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </motion.section>
 
       {/* Chart Section */}
@@ -209,6 +281,7 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
           <table className="w-full text-left border-collapse bg-white">
             <thead>
               <tr className="bg-slate-50 border-bottom border-slate-200">
+                <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Week</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Tanggal</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Latihan</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Volume/Elevasi</th>
@@ -219,8 +292,12 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
             <tbody className="divide-y divide-slate-100">
               {paginatedPlan.map((session, idx) => {
                 const actual = data.actuals?.[session.date] || { isCompleted: false, actualMileage: 0, actualElevation: 0 };
+                const weekNum = getWeekNumber(session.date);
                 return (
                   <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-emerald-600">W{weekNum}</div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-slate-900">{session.date}</div>
                       <div className="text-xs text-slate-500 uppercase">{session.day}</div>

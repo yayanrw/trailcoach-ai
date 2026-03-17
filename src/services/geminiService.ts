@@ -19,14 +19,15 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
     - Kategori & Spesifikasi Rute: ${data.distanceKm} km, ${data.trainingType === 'trail' ? `Total Elevation Gain ${data.totalElevationGain} m, Tipe Teknis Skala ${data.technicalScale}/5` : 'Road Course'}
     - Profil Fisiologis: Umur ${data.age}, Berat Badan ${data.weightKg} kg, Resting Heart Rate ${data.restingHeartRate} bpm
     - Riwayat Lari: Pengalaman ${data.runningExperienceYears} tahun, Jarak Terjauh ${data.longestDistanceKm} km, Mileage Bulanan ${data.monthlyMileageKm} km
-    - Ketersediaan Waktu: ${data.daysPerWeek} hari/minggu, Hari Libur: ${data.offDays.join(', ')}
+    - Ketersediaan Waktu: ${data.daysPerWeek} hari/minggu, Hari Libur (WAJIB REST): ${data.offDays.join(', ')}
     - Riwayat Cedera: ${data.injuryHistory}
     - Akses Fasilitas: ${data.facilityAccess}
 
-    # PENTING (Volume Latihan):
-    User memiliki mileage bulanan ${data.monthlyMileageKm} km (rata-rata ${Math.round(data.monthlyMileageKm / 4)} km per minggu). 
-    JANGAN menurunkan volume latihan secara drastis di minggu-minggu awal jika user sudah terbiasa dengan volume tinggi. 
-    Minggu pertama harus dimulai dengan volume yang mendekati atau sedikit di atas rata-rata mingguan saat ini (${Math.round(data.monthlyMileageKm / 4)} km), kecuali jika ada riwayat cedera yang membatasi.
+    # PENTING (Volume Latihan & Hari Libur):
+    - User memiliki mileage bulanan ${data.monthlyMileageKm} km (rata-rata ${Math.round(data.monthlyMileageKm / 4)} km per minggu). 
+    - JANGAN menurunkan volume latihan secara drastis di minggu-minggu awal jika user sudah terbiasa dengan volume tinggi. 
+    - Minggu pertama harus dimulai dengan volume yang mendekati atau sedikit di atas rata-rata mingguan saat ini (${Math.round(data.monthlyMileageKm / 4)} km), kecuali jika ada riwayat cedera yang membatasi.
+    - WAJIB: Hari-hari yang tercantum dalam "Hari Libur" (${data.offDays.join(', ')}) HARUS selalu ditandai sebagai "Rest" di dalam tabel rencana latihan tanpa pengecualian.
 
     # Scientific Framework:
     1. Periodisasi (Macro & Mesocycles): Bagi rencana ke dalam fase: Base (Aerobic), Build (${data.trainingType === 'trail' ? 'Strength/Vertical' : 'Speed/Threshold'}), Peak (Specific), Tapering, dan Race.
@@ -36,9 +37,10 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
 
     # Output Requirements:
     - Strategy Summary: Penjelasan mengapa pola ini dipilih berdasarkan profil user, tipe latihan (${data.trainingType}), dan data fitness tambahan (jika ada).
+    - Periodization: Daftar fase latihan (Base, Build, Peak, Taper, Race) dengan rentang tanggalnya.
     - Training Plan Table: Daftar sesi latihan per tanggal MULAI DARI HARI INI (${today}) sampai hari H (${data.targetRaceDate}). 
       PENTING: Anda harus menyertakan entri untuk SETIAP HARI tanpa terkecuali. Jangan melompati bulan atau minggu. Jika ada hari istirahat, tandai sebagai "Rest".
-    - Weekly Summary: Total jarak dan total elevasi per minggu.
+    - Weekly Summary: Total jarak dan total elevasi per minggu (Minggu dihitung dari Senin sampai Minggu).
 
     Format output harus dalam JSON yang valid sesuai schema.
     `
@@ -66,6 +68,19 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
         type: Type.OBJECT,
         properties: {
           strategySummary: { type: Type.STRING },
+          periodization: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                name: { type: Type.STRING },
+                startDate: { type: Type.STRING },
+                endDate: { type: Type.STRING },
+                description: { type: Type.STRING },
+              },
+              required: ["name", "startDate", "endDate", "description"]
+            }
+          },
           plan: {
             type: Type.ARRAY,
             items: {
