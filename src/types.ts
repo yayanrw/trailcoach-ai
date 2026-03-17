@@ -1,4 +1,5 @@
 export interface AssessmentData {
+  trainingType: 'trail' | 'road';
   targetRaceName: string;
   targetRaceDate: string;
   distanceKm: number;

@@ -1,5 +1,5 @@
 {
-  "name": "TrailCoach AI - Adaptive Trail Running Planner",
-  "description": "A scientific trail running training plan generator based on sports science and ultra-endurance research.",
+  "name": "RunCoach AI - Adaptive Running Planner",
+  "description": "A scientific running training plan generator for both Trail and Road running based on sports science research.",
   "requestFramePermissions": []
 }

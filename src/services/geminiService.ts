@@ -14,8 +14,9 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
 
     # User Assessment Data:
     - Hari Ini (Start Date): ${today}
+    - Tipe Latihan: ${data.trainingType === 'trail' ? 'Trail Running' : 'Road Running'}
     - Target Race: ${data.targetRaceName} pada ${data.targetRaceDate}
-    - Kategori & Spesifikasi Rute: ${data.distanceKm} km, Total Elevation Gain ${data.totalElevationGain} m, Tipe Teknis Skala ${data.technicalScale}/5
+    - Kategori & Spesifikasi Rute: ${data.distanceKm} km, ${data.trainingType === 'trail' ? `Total Elevation Gain ${data.totalElevationGain} m, Tipe Teknis Skala ${data.technicalScale}/5` : 'Road Course'}
     - Profil Fisiologis: Umur ${data.age}, Berat Badan ${data.weightKg} kg, Resting Heart Rate ${data.restingHeartRate} bpm
     - Riwayat Lari: Pengalaman ${data.runningExperienceYears} tahun, Jarak Terjauh ${data.longestDistanceKm} km, Mileage Bulanan ${data.monthlyMileageKm} km
     - Ketersediaan Waktu: ${data.daysPerWeek} hari/minggu, Hari Libur: ${data.offDays.join(', ')}
@@ -28,13 +29,13 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
     Minggu pertama harus dimulai dengan volume yang mendekati atau sedikit di atas rata-rata mingguan saat ini (${Math.round(data.monthlyMileageKm / 4)} km), kecuali jika ada riwayat cedera yang membatasi.
 
     # Scientific Framework:
-    1. Periodisasi (Macro & Mesocycles): Bagi rencana ke dalam fase: Base (Aerobic), Build (Strength/Vertical), Peak (Specific), Tapering, dan Race.
+    1. Periodisasi (Macro & Mesocycles): Bagi rencana ke dalam fase: Base (Aerobic), Build (${data.trainingType === 'trail' ? 'Strength/Vertical' : 'Speed/Threshold'}), Peak (Specific), Tapering, dan Race.
     2. Deload Week: Setiap minggu ke-4 (atau ke-3 jika user berusia >50 thn) harus merupakan minggu pemulihan dengan reduksi volume 30-50%.
-    3. Strength Training: Fokus pada latihan eksentrik untuk menahan beban saat turunan (downhill) dan latihan core/stabilitas.
+    3. ${data.trainingType === 'trail' ? 'Strength Training: Fokus pada latihan eksentrik untuk menahan beban saat turunan (downhill) dan latihan core/stabilitas.' : 'Speed Work: Fokus pada interval VO2 Max, Tempo Run, dan Threshold untuk meningkatkan pace jalan raya.'}
     4. Mobility/Yoga: Jadwalkan rutin pasca-lari untuk meningkatkan jangkauan gerak (ROM) dan aktivasi sistem saraf parasimpatis.
 
     # Output Requirements:
-    - Strategy Summary: Penjelasan mengapa pola ini dipilih berdasarkan profil user dan data fitness tambahan (jika ada).
+    - Strategy Summary: Penjelasan mengapa pola ini dipilih berdasarkan profil user, tipe latihan (${data.trainingType}), dan data fitness tambahan (jika ada).
     - Training Plan Table: Daftar sesi latihan per tanggal MULAI DARI HARI INI (${today}) sampai hari H (${data.targetRaceDate}). 
       PENTING: Anda harus menyertakan entri untuk SETIAP HARI tanpa terkecuali. Jangan melompati bulan atau minggu. Jika ada hari istirahat, tandai sebagai "Rest".
     - Weekly Summary: Total jarak dan total elevasi per minggu.

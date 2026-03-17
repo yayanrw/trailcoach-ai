@@ -73,10 +73,10 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
-              <Mountain className="w-6 h-6 text-white" />
+              <Activity className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              TrailCoach <span className="text-emerald-600">AI</span>
+              RunCoach <span className="text-emerald-600">AI</span>
             </h1>
           </div>
           <div className="flex items-center gap-4">
@@ -115,11 +115,11 @@ export default function App() {
                   Adaptive Training Plan
                 </motion.div>
                 <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
-                  Rancang Rencana Lari Trail <span className="text-emerald-600 italic">Scientific</span> Anda.
+                  Rancang Rencana Lari <span className="text-emerald-600 italic">Scientific</span> Anda.
                 </h2>
                 <p className="text-lg text-slate-600 leading-relaxed">
-                  Berdasarkan riset sports science terbaru untuk ultra-endurance. 
-                  Dapatkan jadwal yang dipersonalisasi sesuai profil fisiologis dan target race Anda.
+                  Berdasarkan riset sports science terbaru untuk atlet lari. 
+                  Dapatkan jadwal yang dipersonalisasi sesuai profil fisiologis dan target race Anda (Trail atau Road).
                 </p>
               </div>
 
@@ -166,10 +166,10 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
           <div className="flex items-center justify-center gap-2">
             <Activity className="w-5 h-5 text-emerald-600" />
-            <span className="font-bold text-slate-900">TrailCoach AI</span>
+            <span className="font-bold text-slate-900">RunCoach AI</span>
           </div>
           <p className="text-sm text-slate-500">
-            © 2026 TrailCoach AI. Built for Ultra-Endurance Athletes.
+            © 2026 RunCoach AI. Built for Endurance Athletes.
           </p>
           <div className="flex justify-center gap-8 text-xs font-bold text-slate-400 uppercase tracking-widest">
             <span>Periodization</span>

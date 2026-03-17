@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AssessmentData } from '../types';
-import { Activity, Calendar, Heart, Map, Ruler, Timer, Trophy, User, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Activity, Calendar, Heart, Map, Ruler, Timer, Trophy, User, Upload, X, Image as ImageIcon, Mountain } from 'lucide-react';
 
 interface AssessmentFormProps {
   onSubmit: (data: AssessmentData) => void;
@@ -9,6 +9,7 @@ interface AssessmentFormProps {
 
 export const AssessmentForm: React.FC<AssessmentFormProps> = ({ onSubmit, isLoading }) => {
   const [formData, setFormData] = useState<AssessmentData>({
+    trainingType: 'trail',
     targetRaceName: '',
     targetRaceDate: '',
     distanceKm: 21,
@@ -75,6 +76,39 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ onSubmit, isLoad
 
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8 p-6 bg-white rounded-2xl shadow-sm border border-slate-100">
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <Activity className="w-6 h-6 text-emerald-600" />
+          Tipe Latihan
+        </h2>
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={() => setFormData(prev => ({ ...prev, trainingType: 'trail' }))}
+            className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+              formData.trainingType === 'trail' 
+                ? 'border-emerald-600 bg-emerald-50 text-emerald-700' 
+                : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
+            }`}
+          >
+            <Mountain className="w-8 h-8" />
+            <span className="font-bold">Trail Run</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFormData(prev => ({ ...prev, trainingType: 'road' }))}
+            className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+              formData.trainingType === 'road' 
+                ? 'border-emerald-600 bg-emerald-50 text-emerald-700' 
+                : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
+            }`}
+          >
+            <Activity className="w-8 h-8" />
+            <span className="font-bold">Road Run</span>
+          </button>
+        </div>
+      </div>
+
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <Trophy className="w-6 h-6 text-emerald-600" />
