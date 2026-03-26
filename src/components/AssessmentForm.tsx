@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AssessmentData } from '../types';
-import { Activity, Calendar, Heart, Map, Ruler, Timer, Trophy, User, Upload, X, Image as ImageIcon, Mountain } from 'lucide-react';
+import { Activity, Calendar, Heart, Map, Ruler, Timer, Trophy, User, Upload, X, Image as ImageIcon, Mountain, Info } from 'lucide-react';
 
 interface AssessmentFormProps {
   onSubmit: (data: AssessmentData) => void;
@@ -23,6 +23,7 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ onSubmit, isLoad
     monthlyMileageKm: 100,
     daysPerWeek: 4,
     offDays: ['Monday'],
+    longRunDays: ['Sunday'],
     injuryHistory: 'None',
     facilityAccess: 'bodyweight',
   });
@@ -167,7 +168,23 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ onSubmit, isLoad
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-600">Skala Teknis (1-5)</label>
+            <div className="flex items-center gap-1.5 relative group">
+              <label className="text-sm font-medium text-slate-600">Skala Teknis (1-5)</label>
+              <Info className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+              
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900 text-white text-[10px] rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                <p className="font-bold mb-1 text-emerald-400">Panduan Skala Teknis:</p>
+                <ul className="space-y-1">
+                  <li><span className="font-bold">1:</span> Sangat Mudah (Aspal/Tanah Rata)</li>
+                  <li><span className="font-bold">2:</span> Mudah (Jalan Setapak Lebar, Sedikit Akar)</li>
+                  <li><span className="font-bold">3:</span> Sedang (Single Track, Akar/Batu, Curam)</li>
+                  <li><span className="font-bold">4:</span> Sulit (Batu Lepas, Sangat Curam, Teknis)</li>
+                  <li><span className="font-bold">5:</span> Extreme (Scrambling, Exposure, Medan Berat)</li>
+                </ul>
+                <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-slate-900"></div>
+              </div>
+            </div>
             <select
               name="technicalScale"
               value={formData.technicalScale}
@@ -317,6 +334,37 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ onSubmit, isLoad
             })}
           </div>
           <p className="text-[10px] text-slate-400 italic">Pilih hari-hari di mana Anda ingin benar-benar istirahat atau tidak lari.</p>
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-slate-600">Hari Long Run (Bisa pilih &gt; 1)</label>
+          <div className="flex flex-wrap gap-2">
+            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+              const isSelected = formData.longRunDays.includes(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      longRunDays: isSelected 
+                        ? prev.longRunDays.filter(d => d !== day)
+                        : [...prev.longRunDays, day]
+                    }));
+                  }}
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                    isSelected 
+                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-md' 
+                      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-slate-400 italic">Pilih hari-hari potensial untuk sesi lari jarak jauh Anda. AI akan memilih salah satu yang paling optimal setiap minggunya.</p>
         </div>
 
         <div className="space-y-1">

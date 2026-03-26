@@ -13,6 +13,7 @@ export interface AssessmentData {
   monthlyMileageKm: number;
   daysPerWeek: number;
   offDays: string[];
+  longRunDays: string[];
   injuryHistory: string;
   facilityAccess: 'gym' | 'bodyweight';
   fitnessImage?: string; // Base64 string

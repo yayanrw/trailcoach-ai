@@ -19,7 +19,8 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
     - Kategori & Spesifikasi Rute: ${data.distanceKm} km, ${data.trainingType === 'trail' ? `Total Elevation Gain ${data.totalElevationGain} m, Tipe Teknis Skala ${data.technicalScale}/5` : 'Road Course'}
     - Profil Fisiologis: Umur ${data.age}, Berat Badan ${data.weightKg} kg, Resting Heart Rate ${data.restingHeartRate} bpm
     - Riwayat Lari: Pengalaman ${data.runningExperienceYears} tahun, Jarak Terjauh ${data.longestDistanceKm} km, Mileage Bulanan ${data.monthlyMileageKm} km
-    - Ketersediaan Waktu: ${data.daysPerWeek} hari/minggu, Hari Libur (WAJIB REST): ${data.offDays.join(', ')}
+    - Ketersediaan Waktu: ${data.daysPerWeek} hari/minggu, Hari Libur (WAJIB REST): ${data.offDays.join(', ')}, Pilihan Hari Long Run: ${data.longRunDays.join(', ')}
+    - ATURAN LONG RUN: Setiap minggu, pilih SALAH SATU hari dari "Pilihan Hari Long Run" (${data.longRunDays.join(', ')}) untuk menjadi hari sesi lari jarak jauh (Long Run). Anda bisa merotasi hari tersebut jika ada lebih dari satu pilihan, asalkan tetap logis dalam struktur mingguan.
     - Riwayat Cedera: ${data.injuryHistory}
     - Akses Fasilitas: ${data.facilityAccess}
 
@@ -42,6 +43,12 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
 
     # Output Requirements:
     - Strategy Summary: Penjelasan mengapa pola ini dipilih berdasarkan profil user, tipe latihan (${data.trainingType}), dan data fitness tambahan (jika ada).
+    - Plan Description (WAJIB DETAIL):
+       - Jika 'run': Sebutkan struktur latihan (WU, Main Set, CD) dan Zona Intensitas (Z1-Z5).
+         Contoh: "TEMPO RUN 1km WU Z2, 5km TEMPO Z4, 1km CD Z2" atau "INTERVAL 1km WU Z2, 8x400m Z5 Rest 2 min, 1km CD Z2" atau "EASY RUN Z2".
+       - Jika 'strength': Sebutkan nama gerakan, set, dan repetisi.
+         Contoh: "Bulgarian Squat 4x8 with 10kg dumbbell, Plank 3x1min".
+       - Jika 'mobility': Sebutkan fokus area atau gerakan spesifik.
     - Periodization: Daftar fase latihan (Base, Build, Peak, Taper, Race) dengan rentang tanggalnya.
     - Training Plan Table: Daftar sesi latihan per tanggal MULAI DARI HARI INI (${today}) sampai hari H (${data.targetRaceDate}). 
       PENTING: Anda harus menyertakan entri untuk SETIAP HARI tanpa terkecuali. Jangan melompati bulan atau minggu. Jika ada hari istirahat, tandai sebagai "Rest".
@@ -99,7 +106,10 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
                 },
                 durationMileage: { type: Type.STRING },
                 elevationGain: { type: Type.STRING },
-                description: { type: Type.STRING },
+                description: { 
+                  type: Type.STRING,
+                  description: "Detail rencana sesi (WAJIB DETAIL). Contoh: 'TEMPO RUN 1km WU Z2, 5km TEMPO Z4, 1km CD Z2' atau 'Bulgarian Squat 4x8 with 10kg dumbbell'."
+                },
                 focus: { type: Type.STRING },
                 nutritionHydration: { type: Type.STRING },
               },
