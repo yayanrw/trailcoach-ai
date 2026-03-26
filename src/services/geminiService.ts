@@ -49,6 +49,9 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
        - Jika 'strength': Sebutkan nama gerakan, set, dan repetisi.
          Contoh: "Bulgarian Squat 4x8 with 10kg dumbbell, Plank 3x1min".
        - Jika 'mobility': Sebutkan fokus area atau gerakan spesifik.
+    - Session Data (durationMileage):
+       - Untuk 'run': Isi dengan jarak (km) dan durasi (menit). Contoh: "10 km (60 min)".
+       - Untuk 'strength' atau 'mobility': Isi dengan durasi dalam MENIT. Contoh: "45 min" atau "30 menit".
     - Periodization: Daftar fase latihan (Base, Build, Peak, Taper, Race) dengan rentang tanggalnya.
     - Training Plan Table: Daftar sesi latihan per tanggal MULAI DARI HARI INI (${today}) sampai hari H (${data.targetRaceDate}). 
       PENTING: Anda harus menyertakan entri untuk SETIAP HARI tanpa terkecuali. Jangan melompati bulan atau minggu. Jika ada hari istirahat, tandai sebagai "Rest".

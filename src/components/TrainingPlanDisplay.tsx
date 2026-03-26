@@ -145,10 +145,13 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
     const getPlannedMinutes = (durationStr: string) => {
       let plannedMinutes = 0;
       const lowerStr = durationStr.toLowerCase();
-      if (lowerStr.includes('min')) {
+      if (lowerStr.includes('min') || lowerStr.includes('menit')) {
         plannedMinutes = parseFloat(lowerStr.replace(/[^\d.]/g, '')) || 0;
       } else if (lowerStr.includes('hour') || lowerStr.includes('jam')) {
         plannedMinutes = (parseFloat(lowerStr.replace(/[^\d.]/g, '')) || 0) * 60;
+      } else {
+        // Fallback: try to extract any number if it's a non-run session
+        plannedMinutes = parseFloat(lowerStr.replace(/[^\d.]/g, '')) || 0;
       }
       return plannedMinutes;
     };
