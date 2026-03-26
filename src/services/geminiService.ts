@@ -39,25 +39,44 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
        - 'mobility': Untuk latihan fleksibilitas dan mobilitas.
        - 'rest': Untuk hari istirahat total.
     4. ATURAN SESI PER HARI: ${data.allowMultipleSessionsPerDay 
-      ? "Anda DIPERBOLEHKAN memberikan lebih dari satu aktivitas di hari yang sama (misal: 'run' dan 'strength' di tanggal yang sama). Jika ada dua aktivitas, berikan sebagai dua objek terpisah dalam array 'plan' dengan tanggal yang sama." 
+      ? `PENTING: User MENGIZINKAN lebih dari satu aktivitas per hari. Anda SANGAT DISARANKAN untuk menggabungkan sesi (misal: 'run' di pagi hari dan 'strength' atau 'mobility' di sore hari) setidaknya 1-2 kali seminggu. 
+      CONTOH STRUKTUR JSON UNTUK 2 SESI DI HARI YANG SAMA:
+      {
+        "date": "2026-03-01",
+        "day": "Sunday",
+        "type": "run",
+        ...
+      },
+      {
+        "date": "2026-03-01",
+        "day": "Sunday",
+        "type": "strength",
+        ...
+      }` 
       : "Hanya diperbolehkan SATU tipe sesi per hari. JANGAN menggabungkan 'run' dan 'strength' di hari yang sama. Pilih prioritas utama untuk hari tersebut."}
     5. Mobility/Yoga: Bisa dimasukkan sebagai sesi 'mobility' mandiri di hari pemulihan atau hari khusus.
 
     # Output Requirements:
     - Strategy Summary: Penjelasan mengapa pola ini dipilih berdasarkan profil user, tipe latihan (${data.trainingType}), dan data fitness tambahan (jika ada).
     - Plan Description (WAJIB DETAIL):
+       - PENTING: Jika ada 2 aktivitas di hari yang sama (misal: Lari + Strength), JANGAN menggabungkannya dalam satu deskripsi. Anda HARUS membuat dua objek terpisah dalam array 'plan' dengan tanggal yang sama.
        - Jika 'run': Sebutkan struktur latihan (WU, Main Set, CD) dan Zona Intensitas (Z1-Z5).
          Contoh: "TEMPO RUN 1km WU Z2, 5km TEMPO Z4, 1km CD Z2" atau "INTERVAL 1km WU Z2, 8x400m Z5 Rest 2 min, 1km CD Z2" atau "EASY RUN Z2".
        - Jika 'strength': Sebutkan nama gerakan, set, dan repetisi.
          Contoh: "Bulgarian Squat 4x8 with 10kg dumbbell, Plank 3x1min".
        - Jika 'mobility': Sebutkan fokus area atau gerakan spesifik.
     - Session Data (durationMileage):
-       - Untuk 'run': Isi dengan jarak (km) dan durasi (menit). Contoh: "10 km (60 min)".
-       - Untuk 'strength' atau 'mobility': Isi dengan durasi dalam MENIT. Contoh: "45 min" atau "30 menit".
+       - PENTING: JANGAN PERNAH menggabungkan jarak dan durasi dalam satu string.
+       - CONTOH SALAH: "5 km (35 min)", "10 km / 60 min", "45 min (Strength)".
+       - CONTOH BENAR (Run): "10 km".
+       - CONTOH BENAR (Strength/Mobility): "45 min".
+       - Jika tipe sesi adalah 'run': HANYA isi dengan jarak dalam km. Contoh: "10 km".
+       - Jika tipe sesi adalah 'strength' atau 'mobility': HANYA isi dengan durasi dalam menit. Contoh: "45 min".
+       - Jika tipe sesi adalah 'rest': Isi dengan "0".
     - Periodization: Daftar fase latihan (Base, Build, Peak, Taper, Race) dengan rentang tanggalnya.
     - Training Plan Table: Daftar sesi latihan per tanggal MULAI DARI TANGGAL ${data.planStartDate} sampai hari H (${data.targetRaceDate}). 
       PENTING: Anda harus menyertakan entri untuk SETIAP HARI tanpa terkecuali. Jangan melompati bulan atau minggu. Jika ada hari istirahat, tandai sebagai "Rest".
-    - Weekly Summary: Total jarak dan total elevasi per minggu (Minggu dihitung dari Senin sampai Minggu).
+    - Weekly Summary: Total jarak (km) dan total elevasi (meter) per minggu (Minggu dihitung dari Senin sampai Minggu). Contoh: totalDistance: "45 km", totalElevation: "1200".
 
     Format output harus dalam JSON yang valid sesuai schema.
     `
@@ -80,6 +99,7 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
     model: "gemini-3.1-pro-preview",
     contents: { parts: contents },
     config: {
+      systemInstruction: "Anda adalah pelatih lari profesional. Jika user mengizinkan lebih dari satu aktivitas per hari (allowMultipleSessionsPerDay: true), Anda HARUS secara aktif menggabungkan sesi lari dengan strength atau mobility di hari yang sama untuk efisiensi latihan. Pastikan output JSON Anda menyertakan objek terpisah untuk setiap sesi meskipun tanggalnya sama. PENTING: Untuk 'durationMileage', gunakan HANYA jarak (misal: '5 km') untuk lari, dan HANYA durasi (misal: '45 min') untuk strength/mobility. JANGAN PERNAH menggabungkan keduanya.",
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -109,7 +129,10 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
                   type: Type.STRING, 
                   description: "Tipe sesi: 'run', 'mobility', 'strength', atau 'rest'." 
                 },
-                durationMileage: { type: Type.STRING },
+                durationMileage: { 
+                  type: Type.STRING,
+                  description: "Format KETAT: Jika 'run' isi jarak (misal: '5 km'). Jika 'strength'/'mobility' isi durasi (misal: '45 min'). JANGAN GABUNGKAN KEDUANYA."
+                },
                 elevationGain: { 
                   type: Type.STRING,
                   description: "Total elevation gain dalam METER. Contoh: '500' atau '1200'."

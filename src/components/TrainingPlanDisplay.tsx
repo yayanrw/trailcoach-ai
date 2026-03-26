@@ -22,7 +22,7 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
   const [currentPage, setCurrentPage] = useState(1);
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [nonRunChartView, setNonRunChartView] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
-  const itemsPerPage = 10;
+  const itemsPerPage = 14;
 
   const getWeekNumber = (dateStr: string) => {
     const firstDate = new Date(data.plan[0].date);
