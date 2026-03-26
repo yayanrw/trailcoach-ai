@@ -74,37 +74,41 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
 
   // Prepare aggregated data for Chart
   const aggregatedChartData = useMemo(() => {
-    const isRunSession = (type: string) => {
-      return type === 'run';
-    };
+    const isRunSession = (type: string) => type === 'run';
+
+    // 1. Aggregate by date first
+    const dailyData: Record<string, { planned: number; actual: number }> = {};
+    data.plan.forEach(session => {
+      const isRun = isRunSession(session.type);
+      const actual = data.actuals?.[session.date];
+      const plannedMileage = isRun 
+        ? (parseFloat(session.durationMileage.replace(/[^\d.]/g, '')) || 0)
+        : 0;
+      
+      if (!dailyData[session.date]) {
+        dailyData[session.date] = { 
+          planned: 0, 
+          actual: actual?.actualMileage || 0 
+        };
+      }
+      dailyData[session.date].planned += plannedMileage;
+    });
 
     if (chartView === 'daily') {
-      return data.plan.map(session => {
-        const isRun = isRunSession(session.type);
-        const actual = data.actuals?.[session.date];
-        const plannedMileage = isRun 
-          ? (parseFloat(session.durationMileage.replace(/[^\d.]/g, '')) || 0)
-          : 0;
-        return {
-          label: session.date.split('-').slice(1).join('/'),
-          plannedMileage,
-          actualMileage: isRun ? (actual?.actualMileage || 0) : 0,
-        };
-      });
+      return Object.entries(dailyData).map(([date, vals]) => ({
+        label: date.split('-').slice(1).join('/'),
+        plannedMileage: Number(vals.planned.toFixed(1)),
+        actualMileage: Number(vals.actual.toFixed(1)),
+      }));
     }
 
     if (chartView === 'weekly') {
-      const weeks: Record<number, { planned: number, actual: number }> = {};
-      data.plan.forEach((session) => {
-        const isRun = isRunSession(session.type);
-        const weekNum = getWeekNumber(session.date);
-        const actual = data.actuals?.[session.date];
-        const plannedMileage = isRun
-          ? (parseFloat(session.durationMileage.replace(/[^\d.]/g, '')) || 0)
-          : 0;
+      const weeks: Record<number, { planned: number; actual: number }> = {};
+      Object.entries(dailyData).forEach(([date, vals]) => {
+        const weekNum = getWeekNumber(date);
         if (!weeks[weekNum]) weeks[weekNum] = { planned: 0, actual: 0 };
-        weeks[weekNum].planned += plannedMileage;
-        weeks[weekNum].actual += isRun ? (actual?.actualMileage || 0) : 0;
+        weeks[weekNum].planned += vals.planned;
+        weeks[weekNum].actual += vals.actual;
       });
       return Object.entries(weeks).map(([week, vals]) => ({
         label: `W${week}`,
@@ -114,18 +118,13 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
     }
 
     if (chartView === 'monthly') {
-      const months: Record<string, { planned: number, actual: number }> = {};
-      data.plan.forEach((session) => {
-        const isRun = isRunSession(session.type);
-        const dateObj = new Date(session.date);
+      const months: Record<string, { planned: number; actual: number }> = {};
+      Object.entries(dailyData).forEach(([date, vals]) => {
+        const dateObj = new Date(date);
         const monthLabel = dateObj.toLocaleString('default', { month: 'short', year: '2-digit' });
-        const actual = data.actuals?.[session.date];
-        const plannedMileage = isRun
-          ? (parseFloat(session.durationMileage.replace(/[^\d.]/g, '')) || 0)
-          : 0;
         if (!months[monthLabel]) months[monthLabel] = { planned: 0, actual: 0 };
-        months[monthLabel].planned += plannedMileage;
-        months[monthLabel].actual += isRun ? (actual?.actualMileage || 0) : 0;
+        months[monthLabel].planned += vals.planned;
+        months[monthLabel].actual += vals.actual;
       });
       return Object.entries(months).map(([month, vals]) => ({
         label: month,
@@ -138,9 +137,7 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
 
   // Prepare aggregated data for Non-Run Chart (Duration based)
   const nonRunChartData = useMemo(() => {
-    const isNonRunSession = (type: string) => {
-      return ['strength', 'mobility'].includes(type);
-    };
+    const isNonRunSession = (type: string) => ['strength', 'mobility'].includes(type);
 
     const getPlannedMinutes = (durationStr: string) => {
       let plannedMinutes = 0;
@@ -150,40 +147,43 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
       } else if (lowerStr.includes('hour') || lowerStr.includes('jam')) {
         plannedMinutes = (parseFloat(lowerStr.replace(/[^\d.]/g, '')) || 0) * 60;
       } else {
-        // Fallback: try to extract any number if it's a non-run session
         plannedMinutes = parseFloat(lowerStr.replace(/[^\d.]/g, '')) || 0;
       }
       return plannedMinutes;
     };
 
-    if (nonRunChartView === 'daily') {
-      return data.plan.map(session => {
-        const isNonRun = isNonRunSession(session.type);
-        const actual = data.actuals?.[session.date];
-        const plannedDuration = isNonRun 
-          ? getPlannedMinutes(session.durationMileage)
-          : 0;
-        return {
-          label: session.date.split('-').slice(1).join('/'),
-          plannedDuration,
-          actualDuration: isNonRun ? (actual?.actualDuration || 0) : 0,
+    // 1. Aggregate by date first
+    const dailyData: Record<string, { planned: number; actual: number }> = {};
+    data.plan.forEach(session => {
+      const isNonRun = isNonRunSession(session.type);
+      const actual = data.actuals?.[session.date];
+      const plannedDuration = isNonRun ? getPlannedMinutes(session.durationMileage) : 0;
+      
+      if (!dailyData[session.date]) {
+        dailyData[session.date] = { 
+          planned: 0, 
+          actual: actual?.actualDuration || 0 
         };
-      });
+      }
+      dailyData[session.date].planned += plannedDuration;
+    });
+
+    if (nonRunChartView === 'daily') {
+      return Object.entries(dailyData).map(([date, vals]) => ({
+        label: date.split('-').slice(1).join('/'),
+        plannedDuration: Number(vals.planned.toFixed(0)),
+        actualDuration: Number(vals.actual.toFixed(0)),
+      }));
     }
 
     if (nonRunChartView === 'weekly') {
-      const weeks: Record<number, { planned: number, actual: number }> = {};
-      data.plan.forEach((session) => {
-        const isNonRun = isNonRunSession(session.type);
-        const weekNum = getWeekNumber(session.date);
-        const actual = data.actuals?.[session.date];
-        const plannedMinutes = isNonRun ? getPlannedMinutes(session.durationMileage) : 0;
-
+      const weeks: Record<number, { planned: number; actual: number }> = {};
+      Object.entries(dailyData).forEach(([date, vals]) => {
+        const weekNum = getWeekNumber(date);
         if (!weeks[weekNum]) weeks[weekNum] = { planned: 0, actual: 0 };
-        weeks[weekNum].planned += plannedMinutes;
-        weeks[weekNum].actual += isNonRun ? (actual?.actualDuration || 0) : 0;
+        weeks[weekNum].planned += vals.planned;
+        weeks[weekNum].actual += vals.actual;
       });
-
       return Object.entries(weeks).map(([week, vals]) => ({
         label: `W${week}`,
         plannedDuration: Number(vals.planned.toFixed(0)),
@@ -192,19 +192,14 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
     }
 
     if (nonRunChartView === 'monthly') {
-      const months: Record<string, { planned: number, actual: number }> = {};
-      data.plan.forEach((session) => {
-        const isNonRun = isNonRunSession(session.type);
-        const dateObj = new Date(session.date);
+      const months: Record<string, { planned: number; actual: number }> = {};
+      Object.entries(dailyData).forEach(([date, vals]) => {
+        const dateObj = new Date(date);
         const monthLabel = dateObj.toLocaleString('default', { month: 'short', year: '2-digit' });
-        const actual = data.actuals?.[session.date];
-        const plannedMinutes = isNonRun ? getPlannedMinutes(session.durationMileage) : 0;
-
         if (!months[monthLabel]) months[monthLabel] = { planned: 0, actual: 0 };
-        months[monthLabel].planned += plannedMinutes;
-        months[monthLabel].actual += isNonRun ? (actual?.actualDuration || 0) : 0;
+        months[monthLabel].planned += vals.planned;
+        months[monthLabel].actual += vals.actual;
       });
-
       return Object.entries(months).map(([month, vals]) => ({
         label: month,
         plannedDuration: Number(vals.planned.toFixed(0)),
@@ -412,7 +407,7 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Week</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Tanggal</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Latihan</th>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Volume/Elevasi</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Volume/Elevasi (Meter)</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Actual Performance</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 uppercase tracking-wider">Nutrisi</th>
               </tr>
@@ -444,7 +439,7 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-slate-900 font-mono">{session.durationMileage}</div>
-                      <div className="text-xs text-slate-500 font-mono">+{session.elevationGain}m</div>
+                      <div className="text-xs text-slate-500 font-mono">+{session.elevationGain} Meter</div>
                     </td>
                     <td className="px-6 py-4 min-w-[200px]">
                       <div className="space-y-3">
@@ -469,7 +464,7 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
                                 />
                               </div>
                               <div className="space-y-1">
-                                <label className="text-[10px] uppercase font-bold text-slate-400">Actual EG (m)</label>
+                                <label className="text-[10px] uppercase font-bold text-slate-400">Actual EG (Meter)</label>
                                 <input 
                                   type="number"
                                   value={actual.actualElevation === 0 && actual.actualElevation !== undefined ? '' : actual.actualElevation}
@@ -570,7 +565,7 @@ export const TrainingPlanDisplay: React.FC<TrainingPlanDisplayProps> = ({ data, 
                 <span className="text-xl font-bold text-slate-900 font-mono">{summary.totalDistance}</span>
               </div>
               <div className="flex justify-between items-end">
-                <span className="text-slate-500 text-sm">Total Elevasi</span>
+                <span className="text-slate-500 text-sm">Total Elevasi (Meter)</span>
                 <span className="text-xl font-bold text-emerald-600 font-mono">+{summary.totalElevation}</span>
               </div>
             </div>

@@ -12,6 +12,8 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ onSubmit, isLoad
     trainingType: 'trail',
     targetRaceName: '',
     targetRaceDate: '',
+    planStartDate: new Date().toISOString().split('T')[0],
+    allowMultipleSessionsPerDay: false,
     distanceKm: 21,
     totalElevationGain: 1000,
     technicalScale: 3,
@@ -128,6 +130,17 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ onSubmit, isLoad
             />
           </div>
           <div className="space-y-1">
+            <label className="text-sm font-medium text-slate-600">Tanggal Mulai Latihan</label>
+            <input
+              required
+              type="date"
+              name="planStartDate"
+              value={formData.planStartDate}
+              onChange={handleChange}
+              className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+            />
+          </div>
+          <div className="space-y-1">
             <label className="text-sm font-medium text-slate-600">Tanggal Event</label>
             <input
               required
@@ -137,6 +150,20 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ onSubmit, isLoad
               onChange={handleChange}
               className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
             />
+          </div>
+
+          <div className="md:col-span-2 flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <input
+              type="checkbox"
+              id="allowMultipleSessionsPerDay"
+              name="allowMultipleSessionsPerDay"
+              checked={formData.allowMultipleSessionsPerDay}
+              onChange={(e) => setFormData(prev => ({ ...prev, allowMultipleSessionsPerDay: e.target.checked }))}
+              className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            <label htmlFor="allowMultipleSessionsPerDay" className="text-sm font-medium text-slate-700 cursor-pointer">
+              Izinkan lebih dari 1 aktivitas per hari (misal: Lari + Strength di hari yang sama)
+            </label>
           </div>
         </div>
       </div>
@@ -158,7 +185,7 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ onSubmit, isLoad
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-600">Total Elevation Gain (m)</label>
+            <label className="text-sm font-medium text-slate-600">Total Elevation Gain (Meter)</label>
             <input
               type="number"
               name="totalElevationGain"

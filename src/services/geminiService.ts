@@ -16,7 +16,7 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
     - Hari Ini (Start Date): ${today}
     - Tipe Latihan: ${data.trainingType === 'trail' ? 'Trail Running' : 'Road Running'}
     - Target Race: ${data.targetRaceName} pada ${data.targetRaceDate}
-    - Kategori & Spesifikasi Rute: ${data.distanceKm} km, ${data.trainingType === 'trail' ? `Total Elevation Gain ${data.totalElevationGain} m, Tipe Teknis Skala ${data.technicalScale}/5` : 'Road Course'}
+    - Kategori & Spesifikasi Rute: ${data.distanceKm} km, ${data.trainingType === 'trail' ? `Total Elevation Gain ${data.totalElevationGain} meter, Tipe Teknis Skala ${data.technicalScale}/5` : 'Road Course'}
     - Profil Fisiologis: Umur ${data.age}, Berat Badan ${data.weightKg} kg, Resting Heart Rate ${data.restingHeartRate} bpm
     - Riwayat Lari: Pengalaman ${data.runningExperienceYears} tahun, Jarak Terjauh ${data.longestDistanceKm} km, Mileage Bulanan ${data.monthlyMileageKm} km
     - Ketersediaan Waktu: ${data.daysPerWeek} hari/minggu, Hari Libur (WAJIB REST): ${data.offDays.join(', ')}, Pilihan Hari Long Run: ${data.longRunDays.join(', ')}
@@ -38,7 +38,9 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
        - 'strength': Untuk latihan kekuatan otot.
        - 'mobility': Untuk latihan fleksibilitas dan mobilitas.
        - 'rest': Untuk hari istirahat total.
-    4. ATURAN KETAT: Hanya diperbolehkan SATU tipe sesi per hari. JANGAN menggabungkan 'run' dan 'strength' di hari yang sama. Pilih prioritas utama untuk hari tersebut.
+    4. ATURAN SESI PER HARI: ${data.allowMultipleSessionsPerDay 
+      ? "Anda DIPERBOLEHKAN memberikan lebih dari satu aktivitas di hari yang sama (misal: 'run' dan 'strength' di tanggal yang sama). Jika ada dua aktivitas, berikan sebagai dua objek terpisah dalam array 'plan' dengan tanggal yang sama." 
+      : "Hanya diperbolehkan SATU tipe sesi per hari. JANGAN menggabungkan 'run' dan 'strength' di hari yang sama. Pilih prioritas utama untuk hari tersebut."}
     5. Mobility/Yoga: Bisa dimasukkan sebagai sesi 'mobility' mandiri di hari pemulihan atau hari khusus.
 
     # Output Requirements:
@@ -53,7 +55,7 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
        - Untuk 'run': Isi dengan jarak (km) dan durasi (menit). Contoh: "10 km (60 min)".
        - Untuk 'strength' atau 'mobility': Isi dengan durasi dalam MENIT. Contoh: "45 min" atau "30 menit".
     - Periodization: Daftar fase latihan (Base, Build, Peak, Taper, Race) dengan rentang tanggalnya.
-    - Training Plan Table: Daftar sesi latihan per tanggal MULAI DARI HARI INI (${today}) sampai hari H (${data.targetRaceDate}). 
+    - Training Plan Table: Daftar sesi latihan per tanggal MULAI DARI TANGGAL ${data.planStartDate} sampai hari H (${data.targetRaceDate}). 
       PENTING: Anda harus menyertakan entri untuk SETIAP HARI tanpa terkecuali. Jangan melompati bulan atau minggu. Jika ada hari istirahat, tandai sebagai "Rest".
     - Weekly Summary: Total jarak dan total elevasi per minggu (Minggu dihitung dari Senin sampai Minggu).
 
@@ -105,10 +107,13 @@ export async function generateTrainingPlan(data: AssessmentData): Promise<Traini
                 day: { type: Type.STRING },
                 type: { 
                   type: Type.STRING, 
-                  description: "Tipe sesi: 'run', 'mobility', 'strength', atau 'rest'. Hanya satu tipe per hari." 
+                  description: "Tipe sesi: 'run', 'mobility', 'strength', atau 'rest'." 
                 },
                 durationMileage: { type: Type.STRING },
-                elevationGain: { type: Type.STRING },
+                elevationGain: { 
+                  type: Type.STRING,
+                  description: "Total elevation gain dalam METER. Contoh: '500' atau '1200'."
+                },
                 description: { 
                   type: Type.STRING,
                   description: "Detail rencana sesi (WAJIB DETAIL). Contoh: 'TEMPO RUN 1km WU Z2, 5km TEMPO Z4, 1km CD Z2' atau 'Bulgarian Squat 4x8 with 10kg dumbbell'."

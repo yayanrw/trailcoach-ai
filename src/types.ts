@@ -2,6 +2,8 @@ export interface AssessmentData {
   trainingType: 'trail' | 'road';
   targetRaceName: string;
   targetRaceDate: string;
+  planStartDate: string;
+  allowMultipleSessionsPerDay: boolean;
   distanceKm: number;
   totalElevationGain: number;
   technicalScale: number; // 1-5
